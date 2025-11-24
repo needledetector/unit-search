@@ -16,7 +16,7 @@ import logging
 import streamlit as st
 import pandas as pd
 
-from .i18n import t
+from i18n import t
 
 logger = logging.getLogger(__name__)
 
