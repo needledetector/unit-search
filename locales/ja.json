@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "コラボ名検索 🔍",
+    "desc": "メンバーを選ぶと、該当するコラボ名やグループ名を表示します。"
+  },
+  "ui": {
+    "select_members": "メンバーを追加:",
+    "placeholder_select": "ここをクリックしてメンバーを選択...",
+    "language": "言語"
+  },
+  "msg": {
+    "select_prompt": "上のボックスからメンバーを選んでください。",
+    "no_results": "一致するユニットが見つかりませんでした。",
+    "hint_no_results": "ヒント: まだ登録されていない組み合わせかもしれません。",
+    "found_units": "{count} 件のユニットが見つかりました"
+  },
+  "error": {
+    "loading": "エラーが発生しました: {err}",
+    "missing_columns": "CSV に `UnitName` または `Members` カラムが見つかりません。"
+  },
+  "col": {
+    "unitname": "ユニット名",
+    "members": "構成メンバー",
+    "matchscore": "一致度"
+  }
+}

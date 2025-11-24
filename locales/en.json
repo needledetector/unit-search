@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "Unit Search 🔍",
+    "desc": "Select members to show matching unit or collaboration names."
+  },
+  "ui": {
+    "select_members": "Add members:",
+    "placeholder_select": "Click here to choose members...",
+    "language": "Language"
+  },
+  "msg": {
+    "select_prompt": "Please select members from the box above.",
+    "no_results": "No matching units found.",
+    "hint_no_results": "Hint: This combination might not be registered yet.",
+    "found_units": "{count} units found"
+  },
+  "error": {
+    "loading": "An error occurred while loading data: {err}",
+    "missing_columns": "CSV is missing `UnitName` or `Members` columns."
+  },
+  "col": {
+    "unitname": "Unit name",
+    "members": "Members",
+    "matchscore": "Match score"
+  }
+}
