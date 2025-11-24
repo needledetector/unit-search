@@ -321,7 +321,14 @@ def main() -> None:
         if err_txt.startswith("missing_sheet_url"):
             st.error(f"Sheet URL is missing: {err_txt}")
         elif err_txt.startswith("missing_columns"):
-            st.error(t("error.missing_columns", selected_lang))
+            # Value format: missing_columns:<label>:<col1,col2>
+            parts = err_txt.split(":")
+            if len(parts) >= 3:
+                label = parts[1]
+                cols = parts[2]
+                st.error(f"Missing columns in sheet '{label}': {cols}")
+            else:
+                st.error(t("error.missing_columns", selected_lang))
         else:
             st.error(err_txt)
         return
