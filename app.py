@@ -32,6 +32,47 @@ SHEET_URL = (
 LANGUAGES = {"en": "English", "ja": "日本語"}
 
 
+def _detect_or_get_lang() -> str:
+        """Determine language from query params or trigger browser detection.
+
+        - If `?lang=xx` is present and supported, return it.
+        - Otherwise injects a small JS snippet to read `navigator.language` and
+            reload the page with `?lang=xx`. While that redirect happens the
+            current run should stop (we return a placeholder and exit later).
+        - If detection fails, fall back to `'ja'`.
+        """
+        params = st.experimental_get_query_params()
+        if 'lang' in params and params['lang']:
+                code = params['lang'][0]
+                if code in LANGUAGES:
+                        return code
+
+        # inject JS to auto-detect browser language and add `lang` query param
+        js = """
+        <script>
+        (function(){
+            try {
+                const url = new URL(window.location);
+                const params = url.searchParams;
+                if (!params.has('lang')) {
+                    const nav = navigator.language || navigator.userLanguage || 'ja';
+                    const lang = nav.split('-')[0];
+                    params.set('lang', lang);
+                    url.search = params.toString();
+                    window.location.replace(url.toString());
+                }
+            } catch (e) {
+                /* ignore */
+            }
+        })();
+        </script>
+        """
+        # height=0 still injects and runs the script; then stop further rendering
+        st.components.v1.html(js, height=0)
+        # return fallback so the app run can exit gracefully until reload
+        return 'ja'
+
+
 def parse_members(members_raw: str) -> Set[str]:
     """メンバー列の文字列をパースして set を返す。
 
@@ -107,13 +148,28 @@ def find_matches(df: pd.DataFrame, search_set: Set[str]) -> pd.DataFrame:
 
 def main() -> None:
     """Streamlit の UI を構築して検索を実行するメイン関数。"""
-    # language selector in the sidebar
-    selected_lang = st.sidebar.selectbox(
-        "Language",
-        options=list(LANGUAGES.keys()),
+    # determine language (from ?lang= or auto-detect via JS)
+    selected_lang = _detect_or_get_lang()
+
+    # render language selector in sidebar with current selection
+    options = list(LANGUAGES.keys())
+    try:
+        index = options.index(selected_lang)
+    except ValueError:
+        index = options.index('ja') if 'ja' in options else 0
+
+    chosen = st.sidebar.selectbox(
+        t("ui.language", selected_lang) if selected_lang in LANGUAGES else "Language",
+        options=options,
         format_func=lambda code: LANGUAGES.get(code, code),
-        index=0,
+        index=index,
     )
+    # persist the selection to query params so reloads keep it
+    if chosen != selected_lang:
+        st.experimental_set_query_params(lang=chosen)
+        # when query params change Streamlit will rerun; stop this run
+        return
+    selected_lang = chosen
 
     st.title(t("app.title", selected_lang))
     st.markdown(t("app.desc", selected_lang))
