@@ -21,6 +21,7 @@
   "col": {
     "unitname": "Unit name",
     "members": "Members",
-    "matchscore": "Match score"
+    "matchscore": "Match score",
+    "note": "Note"
   }
 }

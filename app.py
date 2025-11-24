@@ -133,12 +133,13 @@ def find_matches(df: pd.DataFrame, search_set: Set[str]) -> pd.DataFrame:
         results.append({
             'UnitName': row['UnitName'],
             'Members': row['Members'],
+            'Note': row.get('Note', ''),
             'MatchScore': score,
             'Intersection': intersection,
         })
 
     if not results:
-        return pd.DataFrame(columns=['UnitName', 'Members', 'MatchScore', 'Intersection'])
+        return pd.DataFrame(columns=['UnitName', 'Members', 'MatchScore', 'Note', 'Intersection'])
 
     result_df = pd.DataFrame(results).sort_values(
         by=['MatchScore', 'Intersection'], ascending=[False, False]
@@ -209,10 +210,11 @@ def main() -> None:
 
     st.success(t("msg.found_units", selected_lang).format(count=len(result_df)))
     st.dataframe(
-        result_df[["UnitName", "Members", "MatchScore"]],
+        result_df[["UnitName", "Members", "Note", "MatchScore"]],
         column_config={
             "UnitName": t("col.unitname", selected_lang),
             "Members": t("col.members", selected_lang),
+            "Note": t("col.note", selected_lang),
             "MatchScore": st.column_config.ProgressColumn(
                 t("col.matchscore", selected_lang), format="%.2f", min_value=0, max_value=1
             ),
