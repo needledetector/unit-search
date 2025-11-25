@@ -1,27 +1,45 @@
 {
   "app": {
-    "title": "コラボ名検索 🔍",
-    "desc": "メンバーを選ぶと、該当するコラボ名やグループ名を表示します。"
+    "title": "ユニット検索",
+    "desc": "メンバーを選ぶと、該当するユニットやコラボ名を表示します。"
   },
   "ui": {
     "select_members": "メンバーを追加:",
     "placeholder_select": "ここをクリックしてメンバーを選択...",
-    "language": "言語"
+    "language": "言語",
+    "member_pool": "メンバーのチップ",
+    "member_search": "メンバーを縮り込み",
+    "placeholder_member_search": "名前や別名で検索...",
+    "sort_members": "並び替え",
+    "sort_label": {
+      "name": "名前",
+      "branch": "ブランチ",
+      "status": "ステータス",
+      "generation": "世代",
+      "alias": "別名"
+    },
+    "filter_branch_members": "ブランチ",
+    "filter_status_members": "ステータス",
+    "filter_generation_members": "世代",
+    "member_pool_hint": "チップをクリックすると検索欄に追加されます。",
+    "selected_members": "検索対象のメンバー",
+    "clear_selected": "選択をクリア",
+    "remove_member": "{name} を外す"
   },
   "msg": {
-    "select_prompt": "上のボックスからメンバーを選んでください。",
-    "no_results": "一致するユニットが見つかりませんでした。",
+    "select_prompt": "上のエリアからメンバーを追加してください。",
+    "no_results": "該当するユニットがありませんでした。",
     "hint_no_results": "ヒント: まだ登録されていない組み合わせかもしれません。",
     "found_units": "{count} 件のユニットが見つかりました"
   },
   "error": {
-    "loading": "エラーが発生しました: {err}",
-    "missing_columns": "CSV に `UnitName` または `Members` カラムが見つかりません。"
+    "loading": "データの読み込み中にエラーが発生しました: {err}",
+    "missing_columns": "CSV に UnitName または Members 列がありません。"
   },
   "col": {
     "unitname": "ユニット名",
-    "members": "構成メンバー",
+    "members": "メンバー",
     "matchscore": "一致度",
-    "note": "備考"
+    "note": "補足"
   }
 }

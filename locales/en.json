@@ -6,7 +6,25 @@
   "ui": {
     "select_members": "Add members:",
     "placeholder_select": "Click here to choose members...",
-    "language": "Language"
+    "language": "Language",
+    "member_pool": "Member chips",
+    "member_search": "Filter members",
+    "placeholder_member_search": "Type to search names or aliases...",
+    "sort_members": "Sort chips by",
+    "sort_label": {
+      "name": "Name",
+      "branch": "Branch",
+      "status": "Status",
+      "generation": "Generation",
+      "alias": "Alias"
+    },
+    "filter_branch_members": "Branch",
+    "filter_status_members": "Status",
+    "filter_generation_members": "Generation",
+    "member_pool_hint": "Click a chip to add it to the search box.",
+    "selected_members": "Selected for search",
+    "clear_selected": "Clear selection",
+    "remove_member": "Remove {name}"
   },
   "msg": {
     "select_prompt": "Please select members from the box above.",

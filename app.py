@@ -28,6 +28,7 @@ OPTIONAL_SHEETS = ("member_aliases", "units_aliases")
 
 # available languages (code -> display name)
 LANGUAGES = {"en": "English", "ja": "日本語"}
+MEMBER_SORT_OPTIONS = ("name", "branch", "status", "generation", "alias")
 
 
 def _detect_or_get_lang() -> str:
@@ -104,10 +105,19 @@ def load_tables() -> Dict[str, pd.DataFrame]:
         if url:
             urls[key] = url
 
+    def _read(url: str) -> pd.DataFrame:
+        """Try reading as CSV, fallback to TSV if only one column with tabs."""
+        df = pd.read_csv(url)
+        if len(df.columns) == 1 and "\t" in df.columns[0]:
+            df = pd.read_csv(url, sep="\t")
+        # trim header whitespace just in case
+        df.columns = [str(c).strip() for c in df.columns]
+        return df
+
     tables: Dict[str, pd.DataFrame] = {}
     for name, url in urls.items():
         try:
-            tables[name] = pd.read_csv(url)
+            tables[name] = _read(url)
         except Exception:
             logger.exception("Failed to load CSV for %s", name)
             raise
@@ -290,6 +300,164 @@ def apply_filters(df: pd.DataFrame, branches: Set[str], statuses: Set[str], gene
     return df[df.apply(_passes, axis=1)]
 
 
+def _filter_member_pool(
+    member_meta: Dict[str, Dict[str, Any]],
+    keyword: str,
+    branches: Set[str],
+    statuses: Set[str],
+    generations: Set[str],
+) -> List[str]:
+    """Return member ids that match keyword and facet filters."""
+    term = keyword.strip().lower()
+    filtered: List[str] = []
+    for mid, meta in member_meta.items():
+        branch = meta.get("branch", "")
+        status = meta.get("status", "")
+        gens = meta.get("generations", set())
+        alias = meta.get("alias", "")
+
+        if branches and branch not in branches:
+            continue
+        if statuses and status not in statuses:
+            continue
+        if generations and not (gens & generations):
+            continue
+
+        if term:
+            haystack = f"{meta.get('display_name','')} {alias} {mid}".lower()
+            if term not in haystack:
+                continue
+
+        filtered.append(mid)
+    return filtered
+
+
+def _sort_member_pool(member_ids: List[str], member_meta: Dict[str, Dict[str, Any]], mode: str) -> List[str]:
+    """Sort member ids according to selected mode."""
+    def _key(mid: str) -> Any:
+        meta = member_meta.get(mid, {})
+        name = meta.get("display_name", mid)
+        branch = meta.get("branch") or ""
+        status = meta.get("status") or ""
+        gens = sorted(meta.get("generations", set()))
+        alias = meta.get("alias") or ""
+        if mode == "branch":
+            return (branch, name)
+        if mode == "status":
+            return (status, name)
+        if mode == "generation":
+            return (gens[0] if gens else "", name)
+        if mode == "alias":
+            return (alias, name)
+        return (name,)
+
+    return sorted(member_ids, key=_key)
+
+
+def render_member_picker(
+    member_meta: Dict[str, Dict[str, Any]],
+    branch_options: List[str],
+    status_options: List[str],
+    generation_options: List[str],
+    selected_lang: str,
+) -> List[str]:
+    """Render filterable member chips and return selected ids."""
+    st.subheader(t("ui.member_pool", selected_lang))
+    with st.container(border=True):
+        search_col, sort_col = st.columns([2, 1])
+        with search_col:
+            keyword = st.text_input(
+                t("ui.member_search", selected_lang),
+                key="member_search",
+                placeholder=t("ui.placeholder_member_search", selected_lang),
+            )
+        with sort_col:
+            sort_mode = st.selectbox(
+                t("ui.sort_members", selected_lang),
+                options=list(MEMBER_SORT_OPTIONS),
+                format_func=lambda key: t(f"ui.sort_label.{key}", selected_lang),
+                key="member_sort",
+            )
+
+        b_col, s_col, g_col = st.columns(3)
+        with b_col:
+            branch_filter = set(
+                st.multiselect(
+                    t("ui.filter_branch_members", selected_lang),
+                    options=branch_options,
+                    key="member_branch_filter",
+                )
+            )
+        with s_col:
+            status_filter = set(
+                st.multiselect(
+                    t("ui.filter_status_members", selected_lang),
+                    options=status_options,
+                    key="member_status_filter",
+                )
+            )
+        with g_col:
+            generation_filter = set(
+                st.multiselect(
+                    t("ui.filter_generation_members", selected_lang),
+                    options=generation_options,
+                    key="member_generation_filter",
+                )
+            )
+
+        filtered_ids = _filter_member_pool(
+            member_meta, keyword, branch_filter, status_filter, generation_filter
+        )
+        sorted_ids = _sort_member_pool(filtered_ids, member_meta, sort_mode)
+
+        st.caption(t("ui.member_pool_hint", selected_lang))
+        cols = st.columns(3) if sorted_ids else []
+        for idx, mid in enumerate(sorted_ids):
+            meta = member_meta[mid]
+            label = meta["display_name"]
+            branch = meta.get("branch", "")
+            gens = meta.get("generations", set())
+            subtitle_parts = []
+            if branch:
+                subtitle_parts.append(branch)
+            if gens:
+                subtitle_parts.append("/".join(sorted(gens)))
+            subtitle = " • ".join(subtitle_parts)
+            chip_label = f"{label}"
+            if subtitle:
+                chip_label = f"{label} ({subtitle})"
+
+            with cols[idx % 3]:
+                if st.button(chip_label, key=f"add_member_{mid}"):
+                    selected = st.session_state.get("selected_members", [])
+                    if mid not in selected:
+                        st.session_state["selected_members"] = selected + [mid]
+                        st.experimental_rerun()
+
+    st.subheader(t("ui.selected_members", selected_lang))
+    selected_members: List[str] = st.session_state.get("selected_members", [])
+    if not selected_members:
+        st.info(t("msg.select_prompt", selected_lang))
+        return []
+
+    action_col, _ = st.columns([1, 3])
+    with action_col:
+        if st.button(t("ui.clear_selected", selected_lang)):
+            st.session_state["selected_members"] = []
+            st.experimental_rerun()
+
+    chip_cols = st.columns(3)
+    for idx, mid in enumerate(selected_members):
+        meta = member_meta.get(mid, {})
+        label = meta.get("display_name", mid)
+        with chip_cols[idx % 3]:
+            if st.button(t("ui.remove_member", selected_lang).format(name=label), key=f"remove_member_{mid}"):
+                st.session_state["selected_members"] = [m for m in selected_members if m != mid]
+                st.experimental_rerun()
+
+    return selected_members
+
+
 def main() -> None:
     selected_lang = _detect_or_get_lang()
 
@@ -342,26 +510,14 @@ def main() -> None:
     status_options: List[str] = data["status_options"]
     generation_options: List[str] = data["generation_options"]
 
-    member_ids = sorted(member_meta.keys(), key=lambda m: member_meta[m]["display_name"])
-    selected_members = st.multiselect(
-        t("ui.select_members", selected_lang),
-        options=member_ids,
-        format_func=lambda mid: f"{member_meta[mid]['display_name']} ({member_meta[mid]['alias']})" if member_meta[mid].get("alias") else member_meta[mid]["display_name"],
-        placeholder=t("ui.placeholder_select", selected_lang),
+    selected_members = render_member_picker(
+        member_meta, branch_options, status_options, generation_options, selected_lang
     )
-
     if not selected_members:
-        st.info(t("msg.select_prompt", selected_lang))
         return
-
-    st.sidebar.divider()
-    branch_filter = set(st.sidebar.multiselect("Branch", options=branch_options, placeholder="JP / EN / ID ..."))
-    status_filter = set(st.sidebar.multiselect("Status", options=status_options, placeholder="active / graduated ..."))
-    generation_filter = set(st.sidebar.multiselect("Generation", options=generation_options, placeholder="1st gen / Myth ..."))
 
     search_set = set(selected_members)
     result_df = find_matches(units_df, search_set)
-    result_df = apply_filters(result_df, branch_filter, status_filter, generation_filter)
 
     if result_df.empty:
         st.warning(t("msg.no_results", selected_lang))
