@@ -354,6 +354,17 @@ def _sort_member_pool(member_ids: List[str], member_meta: Dict[str, Dict[str, An
     return sorted(member_ids, key=_key)
 
 
+def _rerun():
+    """Trigger a Streamlit rerun across supported versions."""
+
+    if hasattr(st, "rerun"):
+        st.rerun()
+    elif hasattr(st, "experimental_rerun"):
+        st.experimental_rerun()
+    else:
+        raise RuntimeError("Streamlit rerun API is unavailable")
+
+
 def render_member_picker(
     member_meta: Dict[str, Dict[str, Any]],
     branch_options: List[str],
@@ -432,7 +443,7 @@ def render_member_picker(
                     selected = st.session_state.get("selected_members", [])
                     if mid not in selected:
                         st.session_state["selected_members"] = selected + [mid]
-                        st.experimental_rerun()
+                        _rerun()
 
     st.subheader(t("ui.selected_members", selected_lang))
     selected_members: List[str] = st.session_state.get("selected_members", [])
@@ -444,7 +455,7 @@ def render_member_picker(
     with action_col:
         if st.button(t("ui.clear_selected", selected_lang)):
             st.session_state["selected_members"] = []
-            st.experimental_rerun()
+            _rerun()
 
     chip_cols = st.columns(3)
     for idx, mid in enumerate(selected_members):
@@ -453,7 +464,7 @@ def render_member_picker(
         with chip_cols[idx % 3]:
             if st.button(t("ui.remove_member", selected_lang).format(name=label), key=f"remove_member_{mid}"):
                 st.session_state["selected_members"] = [m for m in selected_members if m != mid]
-                st.experimental_rerun()
+                _rerun()
 
     return selected_members
 
