@@ -550,5 +550,21 @@ def main() -> None:
     )
 
 
+def _is_running_in_streamlit() -> bool:
+    """Return True when executed under Streamlit's runtime."""
+
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+
+        return get_script_run_ctx() is not None
+    except Exception:
+        return False
+
+
 if __name__ == "__main__":
-    main()
+    if _is_running_in_streamlit():
+        main()
+    else:
+        raise SystemExit(
+            "This application must be run with 'streamlit run app.py' to enable UI reruns."
+        )
