@@ -8,6 +8,7 @@ Unit Search is a Streamlit + FastAPI playground for browsing idol units from pub
 - **Unit lookup:** `backend/api/routes/units.py` returns unit metadata with members sorted by `unit_members.weight` for deterministic display order.
 - **Similarity service:** `backend/features/matrix.py` builds a member×unit matrix and `backend/features/similarity.py` serves cosine-similarity ranking. `/similarity` (see `backend/api/routes/similarity.py`) exposes the top-N similar members API.
 - **Streamlit UI:** `app.py` renders multilingual search, filters, and similarity views. It caches sheet reads, validates required columns, and handles both `st.rerun` and legacy `st.experimental_rerun` for Streamlit Cloud compatibility.
+- **React prototype:** `frontend/src/MemberMultiSelect.tsx` offers a Material UI-based tag input with branch/status/generation filters for teams that prefer embedding the search UI inside a React app.
 
 ## Project layout
 - `app.py`: Streamlit frontend, including sheet loading, filtering, and similarity visualization.
@@ -54,3 +55,16 @@ Run the test suite with:
 pytest -q
 ```
 Pytest covers schema validation, required-sheet failure modes, and API endpoints.
+
+## React UI prototype
+If you want to embed the search UI into a React or Next.js client, use `frontend/src/MemberMultiSelect.tsx`. The component wraps Material UI `Autocomplete` with tag-style chips, backspace deletion, and helper filters for branch, status, and generation.
+
+A minimal Vite demo is included under `frontend/` so you can try the component immediately:
+
+```bash
+cd frontend
+npm install
+npm run dev -- --host
+```
+
+Open the printed local URL (defaults to http://localhost:5173/) to interact with the sample data. See `frontend/README.md` for usage details.
