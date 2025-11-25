@@ -373,6 +373,38 @@ def render_member_picker(
     selected_lang: str,
 ) -> List[str]:
     """Render filterable member chips and return selected ids."""
+    st.subheader(t("ui.select_members", selected_lang))
+    
+    # 検索欄に直接入力できるセクション
+    with st.container(border=True):
+        st.write("**直接入力またはチップから追加**")
+        input_col, _ = st.columns([1, 3])
+        with input_col:
+            direct_input = st.text_input(
+                "メンバーID またはメンバー名:",
+                key="direct_member_input",
+                placeholder="Alice, Bob など...",
+            )
+        
+        if direct_input.strip():
+            # 直接入力されたメンバーを追加
+            for name_or_id in direct_input.split(","):
+                name_or_id = name_or_id.strip().lower()
+                if not name_or_id:
+                    continue
+                # 名前またはIDで検索
+                found_mid = None
+                for mid, meta in member_meta.items():
+                    if (name_or_id == str(mid).lower() or 
+                        name_or_id == meta.get("display_name", "").lower()):
+                        found_mid = mid
+                        break
+                if found_mid:
+                    selected = st.session_state.get("selected_members", [])
+                    if found_mid not in selected:
+                        st.session_state["selected_members"] = selected + [found_mid]
+                        _rerun()
+
     st.subheader(t("ui.member_pool", selected_lang))
     with st.container(border=True):
         search_col, sort_col = st.columns([2, 1])
@@ -422,28 +454,36 @@ def render_member_picker(
         sorted_ids = _sort_member_pool(filtered_ids, member_meta, sort_mode)
 
         st.caption(t("ui.member_pool_hint", selected_lang))
-        cols = st.columns(3) if sorted_ids else []
-        for idx, mid in enumerate(sorted_ids):
+        
+        # ブランチと世代でグループ化
+        members_by_branch_gen: Dict[str, Dict[str, List[str]]] = defaultdict(lambda: defaultdict(list))
+        for mid in sorted_ids:
             meta = member_meta[mid]
-            label = meta["display_name"]
-            branch = meta.get("branch", "")
-            gens = meta.get("generations", set())
-            subtitle_parts = []
-            if branch:
-                subtitle_parts.append(branch)
-            if gens:
-                subtitle_parts.append("/".join(sorted(gens)))
-            subtitle = " • ".join(subtitle_parts)
-            chip_label = f"{label}"
-            if subtitle:
-                chip_label = f"{label} ({subtitle})"
+            branch = meta.get("branch", "") or "その他"
+            gens = sorted(meta.get("generations", set())) if meta.get("generations") else ["未分類"]
+            for gen in gens:
+                members_by_branch_gen[branch][gen].append(mid)
 
-            with cols[idx % 3]:
-                if st.button(chip_label, key=f"add_member_{mid}"):
-                    selected = st.session_state.get("selected_members", [])
-                    if mid not in selected:
-                        st.session_state["selected_members"] = selected + [mid]
-                        _rerun()
+        # ブランチごとに表示
+        for branch in sorted(members_by_branch_gen.keys()):
+            st.write(f"**ブランチ: {branch}**")
+            gen_dict = members_by_branch_gen[branch]
+            
+            for gen in sorted(gen_dict.keys()):
+                st.write(f"*{gen}期生*")
+                member_ids = gen_dict[gen]
+                cols = st.columns(4) if member_ids else []
+                
+                for idx, mid in enumerate(member_ids):
+                    meta = member_meta[mid]
+                    label = meta["display_name"]
+                    
+                    with cols[idx % 4]:
+                        if st.button(label, key=f"add_member_{mid}", use_container_width=True):
+                            selected = st.session_state.get("selected_members", [])
+                            if mid not in selected:
+                                st.session_state["selected_members"] = selected + [mid]
+                                _rerun()
 
     st.subheader(t("ui.selected_members", selected_lang))
     selected_members: List[str] = st.session_state.get("selected_members", [])
