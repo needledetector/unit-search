@@ -1,2 +1,7 @@
 streamlit
 pandas
+fastapi
+uvicorn
+numpy
+requests
+pytest
